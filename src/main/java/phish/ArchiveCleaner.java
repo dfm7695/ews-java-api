@@ -27,7 +27,7 @@ public class ArchiveCleaner {
       Message[] messages = archive.getMessages();
 
       for (Message message : messages) {
-        if (message.getSentDate().getTime() < old) {
+        if (message.getReceivedDate().getTime() < old) {
           message.setFlag(Flags.Flag.DELETED, true);
         }
       }

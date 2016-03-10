@@ -15,6 +15,7 @@ import microsoft.exchange.webservices.data.property.complex.Attachment;
 import microsoft.exchange.webservices.data.property.complex.AttachmentCollection;
 import microsoft.exchange.webservices.data.property.complex.FolderId;
 import microsoft.exchange.webservices.data.property.complex.ItemAttachment;
+import microsoft.exchange.webservices.data.property.complex.MimeContent;
 import microsoft.exchange.webservices.data.search.FindItemsResults;
 import microsoft.exchange.webservices.data.search.FolderView;
 import microsoft.exchange.webservices.data.search.ItemView;
@@ -47,13 +48,21 @@ public class MailChecker {
             if ("message/rfc822".equals(attachment.getContentType())) {
               ItemAttachment itemAttachment = (ItemAttachment) attachment;
               itemAttachment.load();
-              System.out.println("Attachment:\n" + itemAttachment.getItem().getBody());
+              Item attachmentItem = itemAttachment.getItem();
+              String subject = attachmentItem.getSubject();
+              String body = attachmentItem.getBody().toString();
+              System.out.println("Attachment:\n" + body);
+//              System.out.println("From:  " + from);
+              System.out.println("Subject:  " + subject);
+              System.out.println("Link:  " + getLink(body));
             } else {
               System.out.println("Unknown attachment type");
             }
           }
         } else {
+          String body = item.getBody().toString();
           System.out.println("Message Body:\n" + item.getBody());
+          System.out.println("Link:  " + getLink(body));
         }
         item.copy(archive);
         item.delete(DeleteMode.HardDelete);
@@ -82,6 +91,14 @@ public class MailChecker {
       new Messenger().email("phish.MailChecker.getArchive(Exception):\n" + e.getMessage());
     }
     return null;
+  }
+
+  private static String getLink(String body) {
+    int start = body.indexOf("<a href=\"") + 9;
+    System.out.println(start);
+    body = body.substring(start);
+    String link = body.substring(0, body.indexOf("\">"));
+    return link;
   }
 
   /**
