@@ -4,6 +4,7 @@ import microsoft.exchange.webservices.data.autodiscover.IAutodiscoverRedirection
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion;
 import microsoft.exchange.webservices.data.core.enumeration.property.WellKnownFolderName;
+import microsoft.exchange.webservices.data.core.exception.service.local.ServiceLocalException;
 import microsoft.exchange.webservices.data.core.service.item.Item;
 import microsoft.exchange.webservices.data.credential.ExchangeCredentials;
 import microsoft.exchange.webservices.data.credential.WebCredentials;
@@ -27,23 +28,27 @@ public class MailChecker {
       findResults = service.findItems(WellKnownFolderName.Inbox, view);
 
       for (Item item : findResults.getItems()) {
-        System.out.println("Attachment:  " + item.getHasAttachments());
         item.load();
-        System.out.println("Body:  " + item.getBody());
-        AttachmentCollection attachments = item.getAttachments();
-        System.out.println(attachments.getCount() + "attachments.");
+        if (item.getHasAttachments()) {
+          AttachmentCollection attachments = item.getAttachments();
 
-        for (Attachment attachment : attachments) {
-          System.out.println("Attachment name:  " + attachment.getName());
-          System.out.println(attachment.getContentType());
-          if ("message/rfc822".equals(attachment.getContentType())) {
-            System.out.println("The attachment is a message.");
-            ItemAttachment itemAttachment = (ItemAttachment) attachment;
-            itemAttachment.load();
-            System.out.println(itemAttachment.getItem().getBody());
+          for (Attachment attachment : attachments) {
+            System.out.println("Attachment name:  " + attachment.getName());
+            System.out.println(attachment.getContentType());
+            if ("message/rfc822".equals(attachment.getContentType())) {
+              ItemAttachment itemAttachment = (ItemAttachment) attachment;
+              itemAttachment.load();
+              System.out.println("Attachment:\n" + itemAttachment.getItem().getBody());
+            } else {
+              System.out.println("Unknown attachment type");
+            }
           }
+        } else {
+          System.out.println("Message Body:\n" + item.getBody());
         }
       }
+    } catch (ServiceLocalException e) {
+      e.printStackTrace();
     } catch (Exception e) {
       e.printStackTrace();
     }
