@@ -1,7 +1,16 @@
 package phish;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import utility.Messenger;
 import microsoft.exchange.webservices.data.autodiscover.IAutodiscoverRedirectionUrl;
+import microsoft.exchange.webservices.data.core.EwsServiceXmlWriter;
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion;
 import microsoft.exchange.webservices.data.core.enumeration.property.WellKnownFolderName;
@@ -9,6 +18,7 @@ import microsoft.exchange.webservices.data.core.enumeration.service.DeleteMode;
 import microsoft.exchange.webservices.data.core.exception.service.local.ServiceLocalException;
 import microsoft.exchange.webservices.data.core.service.folder.Folder;
 import microsoft.exchange.webservices.data.core.service.item.Item;
+import microsoft.exchange.webservices.data.core.service.schema.EmailMessageSchema;
 import microsoft.exchange.webservices.data.credential.ExchangeCredentials;
 import microsoft.exchange.webservices.data.credential.WebCredentials;
 import microsoft.exchange.webservices.data.property.complex.Attachment;
@@ -47,14 +57,19 @@ public class MailChecker {
             System.out.println(attachment.getContentType());
             if ("message/rfc822".equals(attachment.getContentType())) {
               ItemAttachment itemAttachment = (ItemAttachment) attachment;
-              itemAttachment.load();
+              itemAttachment.load(EmailMessageSchema.MimeContent);
               Item attachmentItem = itemAttachment.getItem();
+              item.load();
+              MimeContent mc = item.getMimeContent();
               String subject = attachmentItem.getSubject();
+              File file = new File("C:/" + subject.toLowerCase() + ".eml");
+              OutputStream output = new FileOutputStream(file);
+              output.write(mc.getContent(), 0, mc.getContent().length);
+              output.close();
               String body = attachmentItem.getBody().toString();
               System.out.println("Attachment:\n" + body);
-//              System.out.println("From:  " + from);
               System.out.println("Subject:  " + subject);
-              System.out.println("Link:  " + getLink(body));
+              System.out.println("Link:  " + getLinks(body).toString());
             } else {
               System.out.println("Unknown attachment type");
             }
@@ -62,7 +77,7 @@ public class MailChecker {
         } else {
           String body = item.getBody().toString();
           System.out.println("Message Body:\n" + item.getBody());
-          System.out.println("Link:  " + getLink(body));
+          System.out.println("Link:  " + getLinks(body).toString());
         }
         item.copy(archive);
         item.delete(DeleteMode.HardDelete);
@@ -93,12 +108,24 @@ public class MailChecker {
     return null;
   }
 
-  private static String getLink(String body) {
-    int start = body.indexOf("<a href=\"") + 9;
+  private static Set<String> getLinks(String body) {
+    Set<String> links = new HashSet<String>();
+    String regex = "\\(?\\b(https?://|www[.])"
+        + "[-A-Za-z0-9+&amp;@#/%?=~_()|!:,.;]*[-A-Za-z0-9+&amp;@#/%=~_()|]";
+    Pattern p = Pattern.compile(regex);
+    int start = body.indexOf("<body") + 6;
     System.out.println(start);
-    body = body.substring(start);
-    String link = body.substring(0, body.indexOf("\">"));
-    return link;
+    String link = body.substring(start);
+    Matcher m = p.matcher(link);
+
+    while (m.find()) {
+      String urlStr = m.group();
+      if (urlStr.startsWith("(") && urlStr.endsWith(")")) {
+        urlStr = urlStr.substring(1, urlStr.length() - 1);
+      }
+      links.add(urlStr);
+    }
+    return links;
   }
 
   /**
