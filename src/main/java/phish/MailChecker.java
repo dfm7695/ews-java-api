@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 import utility.Messenger;
 import microsoft.exchange.webservices.data.autodiscover.IAutodiscoverRedirectionUrl;
-import microsoft.exchange.webservices.data.core.EwsServiceXmlWriter;
 import microsoft.exchange.webservices.data.core.ExchangeService;
 import microsoft.exchange.webservices.data.core.enumeration.misc.ExchangeVersion;
 import microsoft.exchange.webservices.data.core.enumeration.property.WellKnownFolderName;
